@@ -22,7 +22,7 @@ Each character animates individually when the title changes. Choose from five bu
 
 ```yaml
 dependencies:
-  titlemorph: ^0.1.0
+  titlemorph: ^0.0.2
 ```
 
 ```sh
