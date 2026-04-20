@@ -1,4 +1,4 @@
-## 0.1.0
+## 0.0.2
 
 * Added `TitleMorphEffect` enum with five transition styles:
   * `blur` — per-character blur fade (original, default)
