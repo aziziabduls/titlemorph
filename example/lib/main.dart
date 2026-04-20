@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:titlemorph/titlemorph.dart';
 
-void main() {
-  runApp(const TitleMorphExampleApp());
-}
+void main() => runApp(const TitleMorphExampleApp());
 
 class TitleMorphExampleApp extends StatelessWidget {
   const TitleMorphExampleApp({super.key});
@@ -24,33 +22,16 @@ class TitleMorphExampleApp extends StatelessWidget {
 // ── Tab data ──────────────────────────────────────────────────────────────────
 
 class _Tab {
-  const _Tab({required this.title, required this.icon, required this.page});
+  const _Tab({required this.title, required this.icon});
   final String title;
   final IconData icon;
-  final Widget page;
 }
 
 const _tabs = [
-  _Tab(
-    title: 'Home',
-    icon: Icons.home_rounded,
-    page: _PlaceholderPage(label: 'Home'),
-  ),
-  _Tab(
-    title: 'Discover',
-    icon: Icons.explore_rounded,
-    page: _PlaceholderPage(label: 'Discover'),
-  ),
-  _Tab(
-    title: 'Activity',
-    icon: Icons.notifications_rounded,
-    page: _PlaceholderPage(label: 'Activity'),
-  ),
-  _Tab(
-    title: 'Profile',
-    icon: Icons.person_rounded,
-    page: _PlaceholderPage(label: 'Profile'),
-  ),
+  _Tab(title: 'Home',     icon: Icons.home_rounded),
+  _Tab(title: 'Discover', icon: Icons.explore_rounded),
+  _Tab(title: 'Activity', icon: Icons.notifications_rounded),
+  _Tab(title: 'Profile',  icon: Icons.person_rounded),
 ];
 
 // ── Shell ─────────────────────────────────────────────────────────────────────
@@ -64,7 +45,11 @@ class _ExampleShell extends StatefulWidget {
 
 class _ExampleShellState extends State<_ExampleShell> {
   final _pageController = PageController();
-  int _currentIndex = 0;
+  int _tabIndex = 0;
+  TitleMorphEffect _effect = TitleMorphEffect.blur;
+
+  // All available effects for the picker
+  static const _effects = TitleMorphEffect.values;
 
   @override
   void dispose() {
@@ -72,11 +57,11 @@ class _ExampleShellState extends State<_ExampleShell> {
     super.dispose();
   }
 
-  void _onPageChanged(int index) => setState(() => _currentIndex = index);
+  void _onPageChanged(int i) => setState(() => _tabIndex = i);
 
-  void _onNavTapped(int index) {
+  void _onNavTapped(int i) {
     _pageController.animateToPage(
-      index,
+      i,
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOutCubic,
     );
@@ -86,51 +71,132 @@ class _ExampleShellState extends State<_ExampleShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // ── Drop-in replacement: just swap Text(...) for TitleMorph(...) ──
         title: TitleMorph(
-          title: _tabs[_currentIndex].title,
-          // Optional tweaks:
-          // staggerDuration: const Duration(milliseconds: 25),
-          // blurSigma: 8.0,
+          title: _tabs[_tabIndex].title,
+          effect: _effect,
         ),
         centerTitle: true,
         elevation: 0,
+        // Effect picker in the actions area
+        actions: [
+          PopupMenuButton<TitleMorphEffect>(
+            icon: const Icon(Icons.auto_awesome_rounded),
+            tooltip: 'Change effect',
+            initialValue: _effect,
+            onSelected: (e) => setState(() => _effect = e),
+            itemBuilder: (_) => _effects
+                .map(
+                  (e) => PopupMenuItem(
+                    value: e,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _effect == e
+                              ? Icons.check_circle_rounded
+                              : Icons.circle_outlined,
+                          size: 18,
+                          color: _effect == e
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(e.label),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
       ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: _onPageChanged,
-        physics: const BouncingScrollPhysics(),
-        children: _tabs.map((t) => t.page).toList(),
+      body: Column(
+        children: [
+          // Effect chip row for quick switching
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _effects.map((e) {
+                  final selected = _effect == e;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(e.label),
+                      selected: selected,
+                      onSelected: (_) => setState(() => _effect = e),
+                      avatar: Text(e.icon, style: const TextStyle(fontSize: 14)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              physics: const BouncingScrollPhysics(),
+              children: _tabs
+                  .map(
+                    (t) => Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(t.icon, size: 64,
+                              color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(height: 16),
+                          Text(
+                            t.title,
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Effect: ${_effect.label}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: _tabIndex,
         onDestinationSelected: _onNavTapped,
         destinations: _tabs
-            .map(
-              (t) => NavigationDestination(
-                icon: Icon(t.icon),
-                label: t.title,
-              ),
-            )
+            .map((t) => NavigationDestination(icon: Icon(t.icon), label: t.title))
             .toList(),
       ),
     );
   }
 }
 
-// ── Placeholder pages ─────────────────────────────────────────────────────────
+// ── Convenience extensions ────────────────────────────────────────────────────
 
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage({required this.label});
-  final String label;
+extension on TitleMorphEffect {
+  String get label => switch (this) {
+        TitleMorphEffect.blur   => 'Blur',
+        TitleMorphEffect.flip   => 'Flip',
+        TitleMorphEffect.wave   => 'Wave',
+        TitleMorphEffect.skew   => 'Skew',
+        TitleMorphEffect.spiral => 'Spiral',
+      };
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        '$label Page',
-        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w300),
-      ),
-    );
-  }
+  String get icon => switch (this) {
+        TitleMorphEffect.blur   => '🌫️',
+        TitleMorphEffect.flip   => '🔄',
+        TitleMorphEffect.wave   => '〰️',
+        TitleMorphEffect.skew   => '↗️',
+        TitleMorphEffect.spiral => '🌀',
+      };
 }

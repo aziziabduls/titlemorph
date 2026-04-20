@@ -1,19 +1,20 @@
 # titlemorph
 
-A Flutter widget that animates AppBar titles with a **per-character blur reveal** effect — inspired by SwiftUI's `contentTransition(.interpolate)`.
+A Flutter widget that animates AppBar titles with **per-character transition effects** — inspired by SwiftUI's `contentTransition(.interpolate)`.
 
-Each character individually blurs out and blurs back in when the title changes, creating a smooth morphing transition that feels native on both iOS and Android.
+Each character animates individually when the title changes. Choose from five built-in effects.
 
 ---
 
-## Features
+## Effects
 
-- Per-character blur-out → blur-in stagger animation
-- Drop-in replacement for `Text(...)` inside `AppBar.title`
-- `TitleMorphController` for programmatic transitions
-- Fully configurable: stagger speed, blur intensity, duration, curve
-- No dependencies beyond Flutter itself
-- Works with Material 2 and Material 3
+| Effect | Description |
+|--------|-------------|
+| `blur` | Each character blurs out and blurs in (default) |
+| `flip` | 3-D Y-axis rotation, like a card turning |
+| `wave` | Sine-wave ripple travels left to right |
+| `skew` | Horizontal shear warp with subtle scale |
+| `spiral` | Arc curl path with Z-axis rotation |
 
 ---
 
@@ -21,10 +22,8 @@ Each character individually blurs out and blurs back in when the title changes, 
 
 ```yaml
 dependencies:
-  titlemorph: ^0.0.1
+  titlemorph: ^0.1.0
 ```
-
-Then run:
 
 ```sh
 flutter pub get
@@ -34,13 +33,16 @@ flutter pub get
 
 ## Usage
 
-### Basic — reactive on title change
+### Basic
 
 ```dart
 import 'package:titlemorph/titlemorph.dart';
 
 AppBar(
-  title: TitleMorph(title: _tabs[_currentIndex].label),
+  title: TitleMorph(
+    title: _tabs[_currentIndex].label,
+    effect: TitleMorphEffect.wave, // default: TitleMorphEffect.blur
+  ),
 )
 ```
 
@@ -48,52 +50,30 @@ Changing `title` automatically triggers the morph animation.
 
 ---
 
-### With PageView / BottomNavigationBar
+### Switching effects at runtime
 
 ```dart
-class _Shell extends StatefulWidget { ... }
+TitleMorphEffect _effect = TitleMorphEffect.blur;
 
-class _ShellState extends State<_Shell> {
-  final _pageController = PageController();
-  int _index = 0;
-
-  final _tabs = ['Home', 'Discover', 'Activity', 'Profile'];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: TitleMorph(title: _tabs[_index]),
-        centerTitle: true,
-      ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (i) => setState(() => _index = i),
-        children: [ ... ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) {
-          _pageController.animateToPage(
-            i,
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeInOutCubic,
-          );
-        },
-        destinations: _tabs
-            .map((t) => NavigationDestination(icon: ..., label: t))
-            .toList(),
-      ),
-    );
-  }
-}
+AppBar(
+  title: TitleMorph(
+    title: _currentTitle,
+    effect: _effect,
+  ),
+  actions: [
+    PopupMenuButton<TitleMorphEffect>(
+      onSelected: (e) => setState(() => _effect = e),
+      itemBuilder: (_) => TitleMorphEffect.values
+          .map((e) => PopupMenuItem(value: e, child: Text(e.name)))
+          .toList(),
+    ),
+  ],
+)
 ```
 
 ---
 
 ### Programmatic control with `TitleMorphController`
-
-Use a controller when you want to trigger a morph without lifting state to a parent widget.
 
 ```dart
 class _MyState extends State<MyWidget> {
@@ -111,6 +91,7 @@ class _MyState extends State<MyWidget> {
       appBar: AppBar(
         title: TitleMorph(
           title: 'Home',
+          effect: TitleMorphEffect.spiral,
           controller: _controller,
         ),
       ),
@@ -125,39 +106,43 @@ class _MyState extends State<MyWidget> {
 
 ---
 
-## Customisation
+## Parameters
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `title` | `String` | **required** | The text to display |
-| `controller` | `TitleMorphController?` | `null` | For programmatic morphing |
+| `effect` | `TitleMorphEffect` | `.blur` | Transition style |
+| `controller` | `TitleMorphController?` | `null` | Programmatic control |
 | `style` | `TextStyle?` | `null` | Falls back to `AppBarTheme.titleTextStyle` |
-| `staggerDuration` | `Duration` | `28ms` | Delay between each character animating |
-| `blurInDuration` | `Duration` | `220ms` | Blur-in duration per character |
-| `blurOutDuration` | `Duration` | `160ms` | Blur-out duration per character |
-| `swapDelay` | `Duration` | `80ms` | Pause between blur-out finishing and blur-in starting |
-| `blurSigma` | `double` | `7.0` | Max blur amount when a character is hidden |
+| `staggerDuration` | `Duration` | `28ms` | Delay between each character |
+| `blurInDuration` | `Duration` | `220ms` | Reveal duration per character |
+| `blurOutDuration` | `Duration` | `160ms` | Hide duration per character |
+| `swapDelay` | `Duration` | `80ms` | Pause between out and in phases |
+| `blurSigma` | `double` | `7.0` | Max blur amount (`.blur` effect only) |
 | `curve` | `Curve` | `Curves.easeInOut` | Animation curve per character |
 
-### Example — faster, snappier feel
+---
 
+## Tuning tips
+
+**Snappier feel**
 ```dart
 TitleMorph(
-  title: _currentTitle,
+  title: _title,
+  effect: TitleMorphEffect.flip,
   staggerDuration: const Duration(milliseconds: 18),
-  blurInDuration: const Duration(milliseconds: 160),
-  blurOutDuration: const Duration(milliseconds: 120),
-  blurSigma: 5.0,
+  blurInDuration: const Duration(milliseconds: 150),
+  blurOutDuration: const Duration(milliseconds: 100),
 )
 ```
 
-### Example — slower, more dramatic feel
-
+**Slower, dramatic feel**
 ```dart
 TitleMorph(
-  title: _currentTitle,
+  title: _title,
+  effect: TitleMorphEffect.wave,
   staggerDuration: const Duration(milliseconds: 45),
-  blurSigma: 12.0,
+  blurInDuration: const Duration(milliseconds: 320),
   curve: Curves.easeInOutCubic,
 )
 ```
@@ -166,11 +151,11 @@ TitleMorph(
 
 ## How it works
 
-1. Each character in `title` is rendered as its own `Text` widget inside an `ImageFiltered` + `AnimatedOpacity` pair.
-2. On title change, characters blur **out** left-to-right with a fixed stagger delay.
-3. Once the blur-out settles, the internal string is swapped while everything is invisible.
-4. Characters then blur **in** left-to-right with the same stagger, revealing the new title.
-5. `TileMode.decal` on `ImageFilter.blur` prevents edge bleed between adjacent characters.
+1. Each character in `title` gets its own `AnimationController`.
+2. On title change, controllers reverse (animate out) left-to-right with a stagger delay.
+3. Once settled, the string is swapped while all characters are invisible.
+4. Controllers then forward (animate in) left-to-right, revealing the new title.
+5. Each effect applies a different `Transform` / `ImageFiltered` based on the controller value.
 
 ---
 

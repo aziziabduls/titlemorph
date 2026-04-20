@@ -1,6 +1,6 @@
 name: titlemorph
 description: Per-character blur reveal transition for Flutter AppBar titles. Each character individually blurs out and in when the title changes, inspired by SwiftUI contentTransition.
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/aziziabduls/titlemorph
 repository: https://github.com/aziziabduls/titlemorph
 issue_tracker: https://github.com/aziziabduls/titlemorph/issues
